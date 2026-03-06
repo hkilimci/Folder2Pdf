@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -8,10 +9,15 @@ namespace Folder2Pdf;
 public partial class MainWindow : Window
 {
     private bool _isConverting;
+    private readonly ObservableCollection<string> _folders = new();
 
     private bool IsPdf => FormatPdf.IsChecked == true;
 
-    public MainWindow() => InitializeComponent();
+    public MainWindow()
+    {
+        InitializeComponent();
+        FolderList.ItemsSource = _folders;
+    }
 
     // ── Format radio button changed ──────────────────────────────────────────
 
@@ -21,36 +27,44 @@ public partial class MainWindow : Window
 
         ConvertButton.Content = IsPdf ? "Export to PDF" : "Export to TXT";
 
-        // Re-derive the output path when the format changes and the field
-        // was auto-filled (i.e. it still uses the previous auto-generated name).
-        var folder = FolderPathBox.Text?.Trim();
-        if (!string.IsNullOrEmpty(folder) && !string.IsNullOrWhiteSpace(OutputPathBox.Text))
+        // Flip the extension of an auto-generated output path
+        if (!string.IsNullOrWhiteSpace(OutputPathBox.Text))
         {
-            var ext = IsPdf ? ".pdf" : ".txt";
+            var ext   = IsPdf ? ".pdf" : ".txt";
             var other = IsPdf ? ".txt" : ".pdf";
             if (OutputPathBox.Text!.EndsWith(other, StringComparison.OrdinalIgnoreCase))
                 OutputPathBox.Text = Path.ChangeExtension(OutputPathBox.Text, ext);
         }
     }
 
-    // ── Folder picker ────────────────────────────────────────────────────────
+    // ── Folder list management ───────────────────────────────────────────────
 
-    private async void BrowseFolder_Click(object sender, RoutedEventArgs e)
+    private async void AddFolder_Click(object sender, RoutedEventArgs e)
     {
         var results = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Select Source Folder",
-            AllowMultiple = false
+            Title = "Add Source Folder(s)",
+            AllowMultiple = true
         });
 
-        if (results.Count == 0) return;
+        foreach (var item in results)
+        {
+            var path = item.Path.LocalPath;
+            if (!_folders.Contains(path))
+                _folders.Add(path);
+        }
 
-        var path = results[0].Path.LocalPath;
-        FolderPathBox.Text = path;
+        // Auto-fill output path the first time a folder is added
+        if (_folders.Count > 0 && string.IsNullOrWhiteSpace(OutputPathBox.Text))
+            OutputPathBox.Text = BuildDefaultOutputPath(_folders, IsPdf ? ".pdf" : ".txt");
+    }
 
-        // Auto-fill output path if the field is still empty
-        if (string.IsNullOrWhiteSpace(OutputPathBox.Text))
-            OutputPathBox.Text = BuildDefaultOutputPath(path, IsPdf ? ".pdf" : ".txt");
+    private void RemoveFolder_Click(object sender, RoutedEventArgs e)
+    {
+        // Collect selected items first to avoid modifying the collection while iterating
+        var toRemove = FolderList.SelectedItems?.Cast<string>().ToList() ?? new List<string>();
+        foreach (var path in toRemove)
+            _folders.Remove(path);
     }
 
     // ── Output file picker ───────────────────────────────────────────────────
@@ -78,10 +92,9 @@ public partial class MainWindow : Window
     {
         if (_isConverting) return;
 
-        var folderPath = FolderPathBox.Text?.Trim();
-        if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+        if (_folders.Count == 0)
         {
-            AppendLog("⚠  Please select a valid source folder first.");
+            AppendLog("⚠  Add at least one source folder first.");
             return;
         }
 
@@ -109,7 +122,7 @@ public partial class MainWindow : Window
         var expectedExt = IsPdf ? ".pdf" : ".txt";
         var outputPath = OutputPathBox.Text?.Trim();
         if (string.IsNullOrEmpty(outputPath))
-            outputPath = BuildDefaultOutputPath(folderPath, expectedExt);
+            outputPath = BuildDefaultOutputPath(_folders, expectedExt);
         else if (!outputPath.EndsWith(expectedExt, StringComparison.OrdinalIgnoreCase))
             outputPath = Path.ChangeExtension(outputPath, expectedExt);
 
@@ -119,6 +132,7 @@ public partial class MainWindow : Window
 
         var includeHeaders = IncludeHeadersCheck.IsChecked == true;
         var isPdf = IsPdf;
+        var folderSnapshot = _folders.ToList();
 
         // Lock UI
         _isConverting = true;
@@ -128,21 +142,26 @@ public partial class MainWindow : Window
         ProgressLabel.IsVisible = true;
         ProgressLabel.Text = "";
 
-        AppendLog($"Scanning: {folderPath}");
-
         try
         {
-            var files = await Task.Run(() => PdfConverter.GetFilesRecursive(folderPath, extensions));
-
-            if (files.Count == 0)
+            // Scan all folders and merge file lists
+            var allFiles = new List<string>();
+            foreach (var folder in folderSnapshot)
             {
-                AppendLog("⚠  No matching files found in the selected folder.");
+                AppendLog($"Scanning: {folder}");
+                var found = await Task.Run(() => PdfConverter.GetFilesRecursive(folder, extensions));
+                AppendLog($"  → {found.Count} file(s)");
+                allFiles.AddRange(found);
+            }
+
+            if (allFiles.Count == 0)
+            {
+                AppendLog("⚠  No matching files found in any of the selected folders.");
                 return;
             }
 
-            AppendLog($"Found {files.Count} file(s) to process.");
+            AppendLog($"Total: {allFiles.Count} file(s) to process.");
 
-            // Progress<T> captures the UI SynchronizationContext → callbacks run on the UI thread.
             var progress = new Progress<(int current, int total, string fileName)>(p =>
             {
                 ProgressBar.Value = (double)p.current / p.total * 100;
@@ -151,9 +170,9 @@ public partial class MainWindow : Window
             });
 
             if (isPdf)
-                await Task.Run(() => PdfConverter.CreatePdfFromFiles(files, outputPath, includeHeaders, progress));
+                await Task.Run(() => PdfConverter.CreatePdfFromFiles(allFiles, outputPath, includeHeaders, progress));
             else
-                await Task.Run(() => PdfConverter.CreateTxtFromFiles(files, outputPath, includeHeaders, progress));
+                await Task.Run(() => PdfConverter.CreateTxtFromFiles(allFiles, outputPath, includeHeaders, progress));
 
             ProgressBar.Value = 100;
             ProgressLabel.Text = "Done!";
@@ -172,13 +191,15 @@ public partial class MainWindow : Window
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static string BuildDefaultOutputPath(string folderPath, string ext)
+    private static string BuildDefaultOutputPath(IList<string> folders, string ext)
     {
-        var folderName = new DirectoryInfo(folderPath).Name;
+        var baseName = folders.Count == 1
+            ? new DirectoryInfo(folders[0]).Name
+            : "Export";
         var outputDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             "Folder2PDF");
-        return Path.Combine(outputDir, $"{folderName}_{DateTime.Now:yyyyMMdd_HHmmss}{ext}");
+        return Path.Combine(outputDir, $"{baseName}_{DateTime.Now:yyyyMMdd_HHmmss}{ext}");
     }
 
     private void AppendLog(string message)
