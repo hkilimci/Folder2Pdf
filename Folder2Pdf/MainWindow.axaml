@@ -1,0 +1,104 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Folder2Pdf.MainWindow"
+        Title="Folder2PDF"
+        Width="740"
+        Height="620"
+        MinWidth="520"
+        MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid RowDefinitions="Auto,*" Margin="20">
+
+        <!-- ── Top: inputs + controls ── -->
+        <StackPanel Grid.Row="0" Spacing="14">
+
+            <!-- Title -->
+            <TextBlock Text="Folder2PDF"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       Margin="0,0,0,4" />
+
+            <!-- Source Folder -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Source Folder" FontWeight="SemiBold" />
+                <Grid ColumnDefinitions="*,8,Auto">
+                    <TextBox Grid.Column="0"
+                             x:Name="FolderPathBox"
+                             IsReadOnly="True"
+                             Watermark="Select a folder to convert…" />
+                    <Button Grid.Column="2"
+                            Content="Browse…"
+                            Click="BrowseFolder_Click" />
+                </Grid>
+            </StackPanel>
+
+            <!-- Options row -->
+            <CheckBox x:Name="IncludeHeadersCheck"
+                      Content="Include file paths as headers in the PDF"
+                      IsChecked="True" />
+
+            <!-- File Extensions -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="File Extensions" FontWeight="SemiBold" />
+                <TextBox x:Name="ExtensionsBox"
+                         Watermark="Leave blank for defaults  (.txt, .cs, .py, .md, …)" />
+            </StackPanel>
+
+            <!-- Output Path -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Output PDF" FontWeight="SemiBold" />
+                <Grid ColumnDefinitions="*,8,Auto">
+                    <TextBox Grid.Column="0"
+                             x:Name="OutputPathBox"
+                             Watermark="Leave blank to auto-generate next to source folder" />
+                    <Button Grid.Column="2"
+                            Content="Browse…"
+                            Click="BrowseOutput_Click" />
+                </Grid>
+            </StackPanel>
+
+            <!-- Convert -->
+            <Button x:Name="ConvertButton"
+                    Content="Convert to PDF"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    FontSize="15"
+                    FontWeight="SemiBold"
+                    Padding="0,10"
+                    Click="Convert_Click" />
+
+            <!-- Progress -->
+            <ProgressBar x:Name="ProgressBar"
+                         Minimum="0"
+                         Maximum="100"
+                         Value="0"
+                         Height="8"
+                         IsVisible="False" />
+            <TextBlock x:Name="ProgressLabel"
+                       Text=""
+                       HorizontalAlignment="Center"
+                       FontSize="12"
+                       IsVisible="False" />
+
+        </StackPanel>
+
+        <!-- ── Bottom: status log ── -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*" Margin="0,16,0,0">
+            <TextBlock Grid.Row="0"
+                       Text="Log"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,4" />
+            <TextBox Grid.Row="1"
+                     x:Name="StatusLog"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     FontFamily="Courier New,Cascadia Code,monospace"
+                     FontSize="12"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+        </Grid>
+
+    </Grid>
+</Window>
