@@ -87,6 +87,44 @@ public static class PdfConverter
         pdfDoc.Close();
     }
 
+    public static void CreateTxtFromFiles(
+        List<string> files,
+        string outputPath,
+        bool includeHeaders,
+        IProgress<(int current, int total, string fileName)>? progress = null)
+    {
+        using var writer = new StreamWriter(outputPath, append: false, Encoding.UTF8);
+
+        for (var i = 0; i < files.Count; i++)
+        {
+            var file = files[i];
+            progress?.Report((i + 1, files.Count, Path.GetFileName(file)));
+
+            if (i > 0)
+                writer.WriteLine();
+
+            if (includeHeaders)
+            {
+                var separator = new string('=', 80);
+                writer.WriteLine(separator);
+                writer.WriteLine(file);
+                writer.WriteLine(separator);
+            }
+
+            try
+            {
+                var content = File.ReadAllText(file, GetEncoding(file));
+                writer.Write(content);
+                if (!content.EndsWith('\n'))
+                    writer.WriteLine();
+            }
+            catch (Exception ex)
+            {
+                writer.WriteLine($"[Error reading file: {ex.Message}]");
+            }
+        }
+    }
+
     private static Encoding GetEncoding(string filePath)
     {
         try

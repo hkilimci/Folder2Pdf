@@ -9,7 +9,29 @@ public partial class MainWindow : Window
 {
     private bool _isConverting;
 
+    private bool IsPdf => FormatPdf.IsChecked == true;
+
     public MainWindow() => InitializeComponent();
+
+    // ── Format radio button changed ──────────────────────────────────────────
+
+    private void Format_Changed(object sender, RoutedEventArgs e)
+    {
+        if (ConvertButton is null) return; // guard during init
+
+        ConvertButton.Content = IsPdf ? "Export to PDF" : "Export to TXT";
+
+        // Re-derive the output path when the format changes and the field
+        // was auto-filled (i.e. it still uses the previous auto-generated name).
+        var folder = FolderPathBox.Text?.Trim();
+        if (!string.IsNullOrEmpty(folder) && !string.IsNullOrWhiteSpace(OutputPathBox.Text))
+        {
+            var ext = IsPdf ? ".pdf" : ".txt";
+            var other = IsPdf ? ".txt" : ".pdf";
+            if (OutputPathBox.Text!.EndsWith(other, StringComparison.OrdinalIgnoreCase))
+                OutputPathBox.Text = Path.ChangeExtension(OutputPathBox.Text, ext);
+        }
+    }
 
     // ── Folder picker ────────────────────────────────────────────────────────
 
@@ -28,21 +50,22 @@ public partial class MainWindow : Window
 
         // Auto-fill output path if the field is still empty
         if (string.IsNullOrWhiteSpace(OutputPathBox.Text))
-            OutputPathBox.Text = BuildDefaultOutputPath(path);
+            OutputPathBox.Text = BuildDefaultOutputPath(path, IsPdf ? ".pdf" : ".txt");
     }
 
     // ── Output file picker ───────────────────────────────────────────────────
 
     private async void BrowseOutput_Click(object sender, RoutedEventArgs e)
     {
+        FilePickerFileType fileType = IsPdf
+            ? new FilePickerFileType("PDF Files") { Patterns = new[] { "*.pdf" } }
+            : new FilePickerFileType("Text Files") { Patterns = new[] { "*.txt" } };
+
         var result = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Save PDF As",
-            DefaultExtension = "pdf",
-            FileTypeChoices = new[]
-            {
-                new FilePickerFileType("PDF Files") { Patterns = new[] { "*.pdf" } }
-            }
+            Title = IsPdf ? "Save PDF As" : "Save TXT As",
+            DefaultExtension = IsPdf ? "pdf" : "txt",
+            FileTypeChoices = new[] { fileType }
         });
 
         if (result is not null)
@@ -83,18 +106,19 @@ public partial class MainWindow : Window
         }
 
         // Resolve output path
+        var expectedExt = IsPdf ? ".pdf" : ".txt";
         var outputPath = OutputPathBox.Text?.Trim();
         if (string.IsNullOrEmpty(outputPath))
-            outputPath = BuildDefaultOutputPath(folderPath);
-
-        if (!outputPath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-            outputPath += ".pdf";
+            outputPath = BuildDefaultOutputPath(folderPath, expectedExt);
+        else if (!outputPath.EndsWith(expectedExt, StringComparison.OrdinalIgnoreCase))
+            outputPath = Path.ChangeExtension(outputPath, expectedExt);
 
         var outDir = Path.GetDirectoryName(outputPath);
         if (!string.IsNullOrEmpty(outDir))
             Directory.CreateDirectory(outDir);
 
         var includeHeaders = IncludeHeadersCheck.IsChecked == true;
+        var isPdf = IsPdf;
 
         // Lock UI
         _isConverting = true;
@@ -118,20 +142,22 @@ public partial class MainWindow : Window
 
             AppendLog($"Found {files.Count} file(s) to process.");
 
-            // Progress<T> captures the UI SynchronizationContext, so callbacks run on the UI thread.
+            // Progress<T> captures the UI SynchronizationContext → callbacks run on the UI thread.
             var progress = new Progress<(int current, int total, string fileName)>(p =>
             {
-                var pct = (double)p.current / p.total * 100;
-                ProgressBar.Value = pct;
+                ProgressBar.Value = (double)p.current / p.total * 100;
                 ProgressLabel.Text = $"{p.current} / {p.total}  –  {p.fileName}";
                 AppendLog($"  [{p.current}/{p.total}] {p.fileName}");
             });
 
-            await Task.Run(() => PdfConverter.CreatePdfFromFiles(files, outputPath, includeHeaders, progress));
+            if (isPdf)
+                await Task.Run(() => PdfConverter.CreatePdfFromFiles(files, outputPath, includeHeaders, progress));
+            else
+                await Task.Run(() => PdfConverter.CreateTxtFromFiles(files, outputPath, includeHeaders, progress));
 
             ProgressBar.Value = 100;
             ProgressLabel.Text = "Done!";
-            AppendLog($"✓  PDF created: {outputPath}");
+            AppendLog($"✓  {(isPdf ? "PDF" : "TXT")} created: {outputPath}");
         }
         catch (Exception ex)
         {
@@ -146,13 +172,13 @@ public partial class MainWindow : Window
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static string BuildDefaultOutputPath(string folderPath)
+    private static string BuildDefaultOutputPath(string folderPath, string ext)
     {
         var folderName = new DirectoryInfo(folderPath).Name;
         var outputDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             "Folder2PDF");
-        return Path.Combine(outputDir, $"{folderName}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+        return Path.Combine(outputDir, $"{folderName}_{DateTime.Now:yyyyMMdd_HHmmss}{ext}");
     }
 
     private void AppendLog(string message)
@@ -160,7 +186,6 @@ public partial class MainWindow : Window
         void Append()
         {
             StatusLog.Text = (StatusLog.Text ?? "") + message + "\n";
-            // Move caret to end so the TextBox scrolls to show the latest line
             StatusLog.CaretIndex = StatusLog.Text.Length;
         }
 

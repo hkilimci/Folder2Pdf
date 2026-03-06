@@ -35,8 +35,24 @@
 
             <!-- Options row -->
             <CheckBox x:Name="IncludeHeadersCheck"
-                      Content="Include file paths as headers in the PDF"
+                      Content="Include file paths as headers"
                       IsChecked="True" />
+
+            <!-- Output format -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Output Format" FontWeight="SemiBold" />
+                <StackPanel Orientation="Horizontal" Spacing="20">
+                    <RadioButton x:Name="FormatPdf"
+                                 Content="PDF"
+                                 GroupName="OutputFormat"
+                                 IsChecked="True"
+                                 Click="Format_Changed" />
+                    <RadioButton x:Name="FormatTxt"
+                                 Content="TXT (plain text)"
+                                 GroupName="OutputFormat"
+                                 Click="Format_Changed" />
+                </StackPanel>
+            </StackPanel>
 
             <!-- File Extensions -->
             <StackPanel Spacing="4">
@@ -47,7 +63,7 @@
 
             <!-- Output Path -->
             <StackPanel Spacing="4">
-                <TextBlock Text="Output PDF" FontWeight="SemiBold" />
+                <TextBlock Text="Output File" FontWeight="SemiBold" />
                 <Grid ColumnDefinitions="*,8,Auto">
                     <TextBox Grid.Column="0"
                              x:Name="OutputPathBox"
@@ -60,7 +76,7 @@
 
             <!-- Convert -->
             <Button x:Name="ConvertButton"
-                    Content="Convert to PDF"
+                    Content="Export to PDF"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     FontSize="15"
