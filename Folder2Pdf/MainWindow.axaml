@@ -3,7 +3,7 @@
         x:Class="Folder2Pdf.MainWindow"
         Title="Folder2PDF"
         Width="740"
-        Height="620"
+        Height="780"
         MinWidth="520"
         MinHeight="480"
         WindowStartupLocation="CenterScreen">
@@ -35,6 +35,10 @@
             <CheckBox x:Name="IncludeHeadersCheck"
                       Content="Include file paths as headers"
                       IsChecked="True" />
+            <CheckBox x:Name="SeparateBySourceCheck"
+                      Content="Separate output by source folder"
+                      IsChecked="False"
+                      Click="SeparateBySource_Changed" />
 
             <!-- Output format -->
             <StackPanel Spacing="4">
@@ -61,7 +65,7 @@
 
             <!-- Output Path -->
             <StackPanel Spacing="4">
-                <TextBlock Text="Output File" FontWeight="SemiBold" />
+                <TextBlock x:Name="OutputLabel" Text="Output File" FontWeight="SemiBold" />
                 <Grid ColumnDefinitions="*,8,Auto">
                     <TextBox Grid.Column="0"
                              x:Name="OutputPathBox"
@@ -72,15 +76,28 @@
                 </Grid>
             </StackPanel>
 
-            <!-- Convert -->
-            <Button x:Name="ConvertButton"
-                    Content="Export to PDF"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    FontSize="15"
-                    FontWeight="SemiBold"
-                    Padding="0,10"
-                    Click="Convert_Click" />
+            <!-- Convert + Open Folder (3:1) -->
+            <Grid ColumnDefinitions="3*,8,*">
+                <Button Grid.Column="0"
+                        x:Name="ConvertButton"
+                        Content="Export to PDF"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        FontSize="15"
+                        FontWeight="SemiBold"
+                        Padding="0,10"
+                        Click="Convert_Click" />
+                <Button Grid.Column="2"
+                        x:Name="OpenFolderButton"
+                        Content="Open Folder"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        FontSize="15"
+                        FontWeight="SemiBold"
+                        Padding="0,10"
+                        IsVisible="False"
+                        Click="OpenFolder_Click" />
+            </Grid>
 
             <!-- Progress -->
             <ProgressBar x:Name="ProgressBar"

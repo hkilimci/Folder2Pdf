@@ -1,78 +1,73 @@
 # Folder2Pdf
 
-A C# console application that converts text-based files in a folder (including subfolders) into a single PDF document.
+Folder2Pdf is a cross-platform desktop app (Avalonia + .NET) that scans one or more folders and exports matched text files as:
+
+- A single merged `PDF` or `TXT`, or
+- Separate output files per source folder
 
 ## Features
 
-- Converts all text files in a specified folder and its subfolders to a single PDF
-- Each file appears on a separate page in the PDF
-- Includes file paths as optional headers at the top of each page
-- Preserves line breaks and formatting from the original files
-- Handles files with different text encodings
-- Automatically creates an output folder for the generated PDF
-- Names the output file based on the source folder name
+- Multi-folder source selection
+- Recursive file discovery in all subfolders
+- Output format options: `PDF` and `TXT`
+- Optional file path headers in output
+- Optional "separate by source folder" mode
+- Progress bar and live conversion log
+- Encoding detection with BOM support and UTF-8 fallback
 
 ## Requirements
 
-- .NET 9.0 or later
-- Dependencies (installed via NuGet):
-  - itext7 (v8.0.4)
-  - itext7.bouncy-castle-adapter (v8.0.4)
+- .NET SDK 9.0+
 
-## Installation
+NuGet dependencies are restored automatically:
 
-1. Clone the repository
-2. Open the solution in Visual Studio, JetBrains Rider, or your preferred IDE
-3. Restore NuGet packages
-4. Build the solution
+- `Avalonia` / `Avalonia.Desktop` / `Avalonia.Themes.Fluent`
+- `itext7`
+- `itext7.bouncy-castle-adapter`
+
+## Run
+
+```bash
+dotnet run --project Folder2Pdf/Folder2Pdf.csproj
+```
+
+## Build
+
+```bash
+dotnet build Folder2Pdf.sln
+```
 
 ## Usage
 
-Run the application from the command line:
+1. Click `Add Folder...` and select one or more source folders.
+2. (Optional) Toggle:
+   - `Include file paths as headers`
+   - `Separate output by source folder`
+3. Choose output format (`PDF` or `TXT`).
+4. Set file extensions (comma-separated), or leave blank for defaults.
+5. Set output file/folder (or leave blank to auto-generate).
+6. Click `Export`.
 
-```
-dotnet run --project Folder2Pdf/Folder2Pdf.csproj [path-to-folder]
-```
+After export, use `Open Folder` to open the generated output directory.
 
-Or run the built executable directly:
+## Default Behavior
 
-```
-Folder2Pdf.exe [path-to-folder]
-```
+- Default output directory: `~/Folder2PDF`
+- Merged output filename:
+  - Single source folder: `<FolderName>_yyyyMMdd_HHmmss.<ext>`
+  - Multiple source folders: `Export_yyyyMMdd_HHmmss.<ext>`
+- Separate mode output filename (per source folder):
+  - `<FolderName>_yyyyMMdd_HHmmss.<ext>`
 
-### Interactive Mode
+Default extensions (if extension box is empty):
 
-If you run the application without a command-line argument, it will:
+`.txt, .cs, .java, .py, .js, .html, .css, .xml, .json, .md, .csv, .log, .sql, .sh, .bat, .ps1, .yaml, .yml, .ini, .config, .c, .cpp, .h, .hpp, .go, .ts, .rb, .php, .swift, .kt`
 
-1. Prompt you to enter the path to the folder containing text files
-2. Ask if you want to include file paths as headers in the PDF
-3. Allow you to specify which file extensions to process
-4. Give you the option to customize the output PDF path
+## Notes
 
-### Default Settings
-
-- The PDF is saved to an `output` folder in the application directory
-- The output filename is based on the last folder name of the input path
-- Common text-based file extensions are included by default (.txt, .cs, .java, etc.)
-
-## How It Works
-
-The application:
-
-1. Recursively scans the specified folder for text files with matching extensions
-2. Creates a PDF document using iText7
-3. Processes each file, adding its contents to a new page in the PDF
-4. Detects file encoding to ensure text is properly displayed
-5. Saves the PDF to the output location
+- In `PDF` mode, each source file is placed on a separate page.
+- Read errors are logged and do not stop the whole conversion.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Author
-
-hhklmc
+MIT. See [LICENSE](LICENSE).

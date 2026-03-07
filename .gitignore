@@ -1,5 +1,14 @@
+# Build results
 bin/
 obj/
 /packages/
+
+# Rider/JetBrains
+.idea/
 riderModule.iml
 /_ReSharper.Caches/
+
+# macOS
+.DS_Store
+*/.DS_Store
+**/.DS_Store
