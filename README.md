@@ -5,6 +5,10 @@ Folder2Pdf is a cross-platform desktop app (Avalonia + .NET) that scans one or m
 - A single merged `PDF` or `TXT`, or
 - Separate output files per source folder
 
+## Screenshot
+
+![Folder2Pdf screenshot](assets/images/folder2pdf.png)
+
 ## Features
 
 - Multi-folder source selection
