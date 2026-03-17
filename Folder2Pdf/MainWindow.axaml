@@ -2,81 +2,101 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Folder2Pdf.MainWindow"
         Title="Folder2PDF"
-        Width="740"
-        Height="780"
-        MinWidth="520"
-        MinHeight="480"
+        Width="780"
+        Height="850"
+        MinWidth="560"
+        MinHeight="520"
         WindowStartupLocation="CenterScreen">
 
-    <Grid RowDefinitions="Auto,*" Margin="20">
+    <Grid RowDefinitions="Auto,*" Margin="28">
 
         <!-- ── Top: inputs + controls ── -->
-        <StackPanel Grid.Row="0" Spacing="14">
+        <StackPanel Grid.Row="0" Spacing="16">
 
-            <!-- Title -->
-            <TextBlock Text="Folder2PDF"
-                       FontSize="22"
-                       FontWeight="Bold"
-                       Margin="0,0,0,4" />
+            <!-- Header -->
+            <StackPanel Margin="0,0,0,4">
+                <TextBlock Text="Folder2PDF"
+                           FontSize="28"
+                           FontWeight="Bold" />
+                <TextBlock Text="Convert source code folders to PDF or plain text"
+                           FontSize="13"
+                           Foreground="#8B8B9E"
+                           Margin="0,4,0,0" />
+            </StackPanel>
 
-            <!-- Source Folders -->
-            <StackPanel Spacing="4">
-                <TextBlock Text="Source Folders" FontWeight="SemiBold" />
-                <ListBox x:Name="FolderList"
-                         Height="90"
-                         SelectionMode="Multiple" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="Add Folder…" Click="AddFolder_Click" />
-                    <Button Content="Remove Selected" Click="RemoveFolder_Click" />
+            <!-- Source Folders Card -->
+            <Border Classes="card">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="SOURCE FOLDERS" Classes="section-header" />
+                    <ListBox x:Name="FolderList"
+                             MinHeight="72"
+                             MaxHeight="120"
+                             SelectionMode="Multiple" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Add Folder&#x2026;" Click="AddFolder_Click" />
+                        <Button Content="Remove Selected" Click="RemoveFolder_Click" />
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
+            </Border>
 
-            <!-- Options row -->
-            <CheckBox x:Name="IncludeHeadersCheck"
-                      Content="Include file paths as headers"
-                      IsChecked="True" />
-            <CheckBox x:Name="SeparateBySourceCheck"
-                      Content="Separate output by source folder"
-                      IsChecked="False"
-                      Click="SeparateBySource_Changed" />
+            <!-- Settings Card -->
+            <Border Classes="card">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="SETTINGS" Classes="section-header" />
 
-            <!-- Output format -->
-            <StackPanel Spacing="4">
-                <TextBlock Text="Output Format" FontWeight="SemiBold" />
-                <StackPanel Orientation="Horizontal" Spacing="20">
-                    <RadioButton x:Name="FormatPdf"
-                                 Content="PDF"
-                                 GroupName="OutputFormat"
-                                 IsChecked="True"
-                                 Click="Format_Changed" />
-                    <RadioButton x:Name="FormatTxt"
-                                 Content="TXT (plain text)"
-                                 GroupName="OutputFormat"
-                                 Click="Format_Changed" />
+                    <!-- Options + Format in one row -->
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                        <CheckBox Grid.Column="0"
+                                  x:Name="IncludeHeadersCheck"
+                                  Content="Include file paths as headers"
+                                  IsChecked="True"
+                                  Margin="0,0,16,0" />
+                        <CheckBox Grid.Column="1"
+                                  x:Name="SeparateBySourceCheck"
+                                  Content="Separate output by source folder"
+                                  IsChecked="False"
+                                  Click="SeparateBySource_Changed" />
+                        <StackPanel Grid.Column="3"
+                                    Orientation="Horizontal"
+                                    Spacing="12"
+                                    VerticalAlignment="Center">
+                            <RadioButton x:Name="FormatPdf"
+                                         Content="PDF"
+                                         GroupName="OutputFormat"
+                                         IsChecked="True"
+                                         Click="Format_Changed" />
+                            <RadioButton x:Name="FormatTxt"
+                                         Content="TXT"
+                                         GroupName="OutputFormat"
+                                         Click="Format_Changed" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Classes="divider" />
+
+                    <!-- Extensions + Output Path in one row -->
+                    <Grid ColumnDefinitions="*,16,1.5*">
+                        <StackPanel Grid.Column="0" Spacing="6">
+                            <TextBlock Text="File Extensions" FontWeight="SemiBold" FontSize="13" />
+                            <TextBox x:Name="ExtensionsBox"
+                                     Watermark=".txt, .cs, .py, .md, &#x2026;" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="6">
+                            <TextBlock x:Name="OutputLabel" Text="Output File" FontWeight="SemiBold" FontSize="13" />
+                            <Grid ColumnDefinitions="*,8,Auto">
+                                <TextBox Grid.Column="0"
+                                         x:Name="OutputPathBox"
+                                         Watermark="Leave blank to auto-generate" />
+                                <Button Grid.Column="2"
+                                        Content="Browse&#x2026;"
+                                        Click="BrowseOutput_Click" />
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
-            </StackPanel>
+            </Border>
 
-            <!-- File Extensions -->
-            <StackPanel Spacing="4">
-                <TextBlock Text="File Extensions" FontWeight="SemiBold" />
-                <TextBox x:Name="ExtensionsBox"
-                         Watermark="Leave blank for defaults  (.txt, .cs, .py, .md, …)" />
-            </StackPanel>
-
-            <!-- Output Path -->
-            <StackPanel Spacing="4">
-                <TextBlock x:Name="OutputLabel" Text="Output File" FontWeight="SemiBold" />
-                <Grid ColumnDefinitions="*,8,Auto">
-                    <TextBox Grid.Column="0"
-                             x:Name="OutputPathBox"
-                             Watermark="Leave blank to auto-generate next to source folder" />
-                    <Button Grid.Column="2"
-                            Content="Browse…"
-                            Click="BrowseOutput_Click" />
-                </Grid>
-            </StackPanel>
-
-            <!-- Convert + Open Folder (3:1) -->
+            <!-- Action Buttons -->
             <Grid ColumnDefinitions="3*,8,*">
                 <Button Grid.Column="0"
                         x:Name="ConvertButton"
@@ -85,8 +105,18 @@
                         HorizontalContentAlignment="Center"
                         FontSize="15"
                         FontWeight="SemiBold"
-                        Padding="0,10"
-                        Click="Convert_Click" />
+                        Padding="0,14"
+                        CornerRadius="10"
+                        Click="Convert_Click">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackground" Color="#6366F1" />
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#818CF8" />
+                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#4F46E5" />
+                        <SolidColorBrush x:Key="ButtonForeground" Color="White" />
+                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White" />
+                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#E0E0FF" />
+                    </Button.Resources>
+                </Button>
                 <Button Grid.Column="2"
                         x:Name="OpenFolderButton"
                         Content="Open Folder"
@@ -94,7 +124,8 @@
                         HorizontalContentAlignment="Center"
                         FontSize="15"
                         FontWeight="SemiBold"
-                        Padding="0,10"
+                        Padding="0,14"
+                        CornerRadius="10"
                         IsVisible="False"
                         Click="OpenFolder_Click" />
             </Grid>
@@ -104,32 +135,35 @@
                          Minimum="0"
                          Maximum="100"
                          Value="0"
-                         Height="8"
+                         Height="6"
+                         CornerRadius="3"
                          IsVisible="False" />
             <TextBlock x:Name="ProgressLabel"
                        Text=""
                        HorizontalAlignment="Center"
                        FontSize="12"
+                       Foreground="#8B8B9E"
                        IsVisible="False" />
 
         </StackPanel>
 
         <!-- ── Bottom: status log ── -->
-        <Grid Grid.Row="1" RowDefinitions="Auto,*" Margin="0,16,0,0">
-            <TextBlock Grid.Row="0"
-                       Text="Log"
-                       FontWeight="SemiBold"
-                       Margin="0,0,0,4" />
-            <TextBox Grid.Row="1"
-                     x:Name="StatusLog"
-                     IsReadOnly="True"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap"
-                     FontFamily="Courier New,Cascadia Code,monospace"
-                     FontSize="12"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
-        </Grid>
+        <Border Grid.Row="1" Classes="card" Margin="0,16,0,0">
+            <Grid RowDefinitions="Auto,*">
+                <TextBlock Grid.Row="0"
+                           Text="LOG"
+                           Classes="section-header" />
+                <TextBox Grid.Row="1"
+                         x:Name="StatusLog"
+                         IsReadOnly="True"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         FontFamily="Cascadia Code,JetBrains Mono,Courier New,monospace"
+                         FontSize="12"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+            </Grid>
+        </Border>
 
     </Grid>
 </Window>

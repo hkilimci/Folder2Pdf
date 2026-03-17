@@ -6,7 +6,7 @@ APP_NAME="Folder2Pdf"
 BUNDLE_NAME="${APP_NAME}.app"
 PROJECT_DIR="Folder2Pdf"
 OUTPUT_DIR="publish"
-ICON_SOURCE="assets/images/folder2pdf.png"
+ICON_SOURCE="assets/images/folder2pdf-icon.png"
 
 # Detect architecture
 ARCH=$(uname -m)
