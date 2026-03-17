@@ -8,6 +8,9 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 
+# Publish output
+publish/
+
 # macOS
 .DS_Store
 */.DS_Store
