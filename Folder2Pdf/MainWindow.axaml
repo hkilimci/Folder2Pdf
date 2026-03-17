@@ -14,15 +14,15 @@
         <StackPanel Grid.Row="0" Spacing="16">
 
             <!-- Header -->
-            <StackPanel Margin="0,0,0,4">
-                <TextBlock Text="Folder2PDF"
-                           FontSize="28"
-                           FontWeight="Bold" />
-                <TextBlock Text="Convert source code folders to PDF or plain text"
-                           FontSize="13"
-                           Foreground="#8B8B9E"
-                           Margin="0,4,0,0" />
-            </StackPanel>
+            <!-- <StackPanel Margin="0,0,0,4"> -->
+            <!--     <TextBlock Text="Folder2PDF" -->
+            <!--                FontSize="28" -->
+            <!--                FontWeight="Bold" /> -->
+            <!--     <TextBlock Text="Convert source code folders to PDF or plain text" -->
+            <!--                FontSize="13" -->
+            <!--                Foreground="#8B8B9E" -->
+            <!--                Margin="0,4,0,0" /> -->
+            <!-- </StackPanel> -->
 
             <!-- Source Folders Card -->
             <Border Classes="card">
@@ -44,33 +44,50 @@
                 <StackPanel Spacing="14">
                     <TextBlock Text="SETTINGS" Classes="section-header" />
 
-                    <!-- Options + Format in one row -->
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-                        <CheckBox Grid.Column="0"
-                                  x:Name="IncludeHeadersCheck"
+                    <!-- Options row 1 -->
+                    <WrapPanel Orientation="Horizontal">
+                        <CheckBox x:Name="IncludeHeadersCheck"
                                   Content="Include file paths as headers"
                                   IsChecked="True"
                                   Margin="0,0,16,0" />
-                        <CheckBox Grid.Column="1"
-                                  x:Name="SeparateBySourceCheck"
+                        <CheckBox x:Name="SeparateBySourceCheck"
                                   Content="Separate output by source folder"
-                                  IsChecked="False"
+                                  IsChecked="True"
+                                  Margin="0,0,16,0"
                                   Click="SeparateBySource_Changed" />
-                        <StackPanel Grid.Column="3"
-                                    Orientation="Horizontal"
-                                    Spacing="12"
-                                    VerticalAlignment="Center">
-                            <RadioButton x:Name="FormatPdf"
-                                         Content="PDF"
-                                         GroupName="OutputFormat"
-                                         IsChecked="True"
-                                         Click="Format_Changed" />
-                            <RadioButton x:Name="FormatTxt"
-                                         Content="TXT"
-                                         GroupName="OutputFormat"
-                                         Click="Format_Changed" />
-                        </StackPanel>
-                    </Grid>
+                        <CheckBox x:Name="TimestampCheck"
+                                  Content="Add timestamp to filename"
+                                  IsChecked="False" />
+                    </WrapPanel>
+
+                    <!-- Output format -->
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="Format" FontWeight="SemiBold" FontSize="13"
+                                   VerticalAlignment="Center" Margin="0,0,4,0" />
+                        <RadioButton x:Name="FormatPdf"
+                                     Content=".pdf"
+                                     GroupName="OutputFormat"
+                                     IsChecked="True"
+                                     Click="Format_Changed" />
+                        <RadioButton x:Name="FormatTxt"
+                                     Content=".txt"
+                                     GroupName="OutputFormat"
+                                     Click="Format_Changed" />
+                        <RadioButton x:Name="FormatMd"
+                                     Content=".md"
+                                     GroupName="OutputFormat"
+                                     Click="Format_Changed" />
+                        <RadioButton x:Name="FormatOther"
+                                     Content="Other"
+                                     GroupName="OutputFormat"
+                                     Click="Format_Changed" />
+                        <TextBox x:Name="CustomFormatBox"
+                                 Watermark=".js"
+                                 Width="80"
+                                 IsVisible="False"
+                                 VerticalAlignment="Center"
+                                 TextChanged="Format_Changed" />
+                    </StackPanel>
 
                     <Border Classes="divider" />
 
@@ -78,8 +95,21 @@
                     <Grid ColumnDefinitions="*,16,1.5*">
                         <StackPanel Grid.Column="0" Spacing="6">
                             <TextBlock Text="File Extensions" FontWeight="SemiBold" FontSize="13" />
-                            <TextBox x:Name="ExtensionsBox"
-                                     Watermark=".txt, .cs, .py, .md, &#x2026;" />
+                            <ComboBox x:Name="ExtensionsCombo"
+                                      HorizontalAlignment="Stretch"
+                                      SelectedIndex="0"
+                                      SelectionChanged="Extensions_Changed">
+                                <ComboBoxItem Content="All supported (default)" />
+                                <ComboBoxItem Content=".pdf" />
+                                <ComboBoxItem Content=".txt" />
+                                <ComboBoxItem Content=".md" />
+                                <ComboBoxItem Content=".py" />
+                                <ComboBoxItem Content=".js" />
+                                <ComboBoxItem Content="Other…" />
+                            </ComboBox>
+                            <TextBox x:Name="CustomExtensionsBox"
+                                     Watermark=".cs, .java, .go, &#x2026;"
+                                     IsVisible="False" />
                         </StackPanel>
                         <StackPanel Grid.Column="2" Spacing="6">
                             <TextBlock x:Name="OutputLabel" Text="Output File" FontWeight="SemiBold" FontSize="13" />

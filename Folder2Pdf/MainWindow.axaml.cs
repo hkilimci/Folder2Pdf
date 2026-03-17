@@ -15,6 +15,24 @@ public partial class MainWindow : Window
 
     private bool IsPdf => FormatPdf.IsChecked == true;
     private bool SeparateBySource => SeparateBySourceCheck.IsChecked == true;
+    private bool IncludeTimestamp => TimestampCheck.IsChecked == true;
+
+    private string TimestampSuffix => IncludeTimestamp ? $"_{DateTime.Now:yyyyMMdd_HHmmss}" : "";
+
+    private string OutputExtension
+    {
+        get
+        {
+            if (FormatPdf.IsChecked == true) return ".pdf";
+            if (FormatTxt.IsChecked == true) return ".txt";
+            if (FormatMd.IsChecked == true) return ".md";
+            // "Other" — parse from custom box
+            var custom = CustomFormatBox?.Text?.Trim() ?? "";
+            if (!string.IsNullOrEmpty(custom))
+                return custom.StartsWith('.') ? custom : "." + custom;
+            return ".txt"; // fallback
+        }
+    }
 
     public MainWindow()
     {
@@ -24,18 +42,21 @@ public partial class MainWindow : Window
 
     // ── Format radio button changed ──────────────────────────────────────────
 
-    private void Format_Changed(object sender, RoutedEventArgs e)
+    private void Format_Changed(object? sender, RoutedEventArgs e)
     {
         if (ConvertButton is null) return; // guard during init
 
-        ConvertButton.Content = IsPdf ? "Export to PDF" : "Export to TXT";
+        var ext = OutputExtension;
+        var isOther = FormatOther.IsChecked == true;
+        CustomFormatBox.IsVisible = isOther;
 
-        // Only flip extension in merged mode (separate mode has a directory path)
+        ConvertButton.Content = $"Export to {ext.TrimStart('.').ToUpperInvariant()}";
+
+        // Update extension in merged mode output path
         if (!SeparateBySource && !string.IsNullOrWhiteSpace(OutputPathBox.Text))
         {
-            var ext   = IsPdf ? ".pdf" : ".txt";
-            var other = IsPdf ? ".txt" : ".pdf";
-            if (OutputPathBox.Text!.EndsWith(other, StringComparison.OrdinalIgnoreCase))
+            var currentExt = Path.GetExtension(OutputPathBox.Text);
+            if (!string.IsNullOrEmpty(currentExt))
                 OutputPathBox.Text = Path.ChangeExtension(OutputPathBox.Text, ext);
         }
     }
@@ -51,9 +72,18 @@ public partial class MainWindow : Window
         if (_folders.Count > 0)
             OutputPathBox.Text = SeparateBySource
                 ? BuildDefaultOutputDir()
-                : BuildDefaultOutputPath(_folders, IsPdf ? ".pdf" : ".txt");
+                : BuildDefaultOutputPath(_folders, OutputExtension);
         else
             OutputPathBox.Text = "";
+    }
+
+    // ── Extensions combo changed ─────────────────────────────────────────────
+
+    private void Extensions_Changed(object? sender, SelectionChangedEventArgs e)
+    {
+        if (CustomExtensionsBox is null) return; // guard during init
+        // Show custom text box only when "Other…" is selected (last item)
+        CustomExtensionsBox.IsVisible = ExtensionsCombo.SelectedIndex == ExtensionsCombo.ItemCount - 1;
     }
 
     // ── Folder list management ───────────────────────────────────────────────
@@ -77,7 +107,7 @@ public partial class MainWindow : Window
         if (_folders.Count > 0 && string.IsNullOrWhiteSpace(OutputPathBox.Text))
             OutputPathBox.Text = SeparateBySource
                 ? BuildDefaultOutputDir()
-                : BuildDefaultOutputPath(_folders, IsPdf ? ".pdf" : ".txt");
+                : BuildDefaultOutputPath(_folders, OutputExtension);
     }
 
     private void RemoveFolder_Click(object sender, RoutedEventArgs e)
@@ -102,14 +132,15 @@ public partial class MainWindow : Window
             return;
         }
 
-        FilePickerFileType fileType = IsPdf
-            ? new FilePickerFileType("PDF Files") { Patterns = new[] { "*.pdf" } }
-            : new FilePickerFileType("Text Files") { Patterns = new[] { "*.txt" } };
+        var ext = OutputExtension;
+        var extNoDot = ext.TrimStart('.');
+        var label = extNoDot.ToUpperInvariant();
+        var fileType = new FilePickerFileType($"{label} Files") { Patterns = new[] { $"*{ext}" } };
 
         var result = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = IsPdf ? "Save PDF As" : "Save TXT As",
-            DefaultExtension = IsPdf ? "pdf" : "txt",
+            Title = $"Save {label} As",
+            DefaultExtension = extNoDot,
             FileTypeChoices = new[] { fileType }
         });
 
@@ -130,26 +161,44 @@ public partial class MainWindow : Window
         }
 
         // Parse extensions
-        var extInput = ExtensionsBox.Text?.Trim();
+        var selectedIndex = ExtensionsCombo.SelectedIndex;
         HashSet<string> extensions;
-        if (string.IsNullOrEmpty(extInput))
+        if (selectedIndex == 0)
         {
+            // "All supported (default)"
             extensions = PdfConverter.DefaultTextExtensions;
             AppendLog($"Using default extensions: {string.Join(", ", extensions)}");
         }
+        else if (selectedIndex == ExtensionsCombo.ItemCount - 1)
+        {
+            // "Other…" — parse custom input
+            var customInput = CustomExtensionsBox.Text?.Trim();
+            if (string.IsNullOrEmpty(customInput))
+            {
+                extensions = PdfConverter.DefaultTextExtensions;
+                AppendLog("No custom extensions specified, using defaults.");
+            }
+            else
+            {
+                extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var raw in customInput.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var ext = raw.Trim();
+                    if (!ext.StartsWith('.')) ext = "." + ext;
+                    extensions.Add(ext);
+                }
+                AppendLog($"Using extensions: {string.Join(", ", extensions)}");
+            }
+        }
         else
         {
-            extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var raw in extInput.Split(',', StringSplitOptions.RemoveEmptyEntries))
-            {
-                var ext = raw.Trim();
-                if (!ext.StartsWith('.')) ext = "." + ext;
-                extensions.Add(ext);
-            }
-            AppendLog($"Using extensions: {string.Join(", ", extensions)}");
+            // Specific extension selected from dropdown
+            var selected = ((ComboBoxItem)ExtensionsCombo.SelectedItem!).Content!.ToString()!;
+            extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { selected };
+            AppendLog($"Using extension: {selected}");
         }
 
-        var expectedExt    = IsPdf ? ".pdf" : ".txt";
+        var expectedExt    = OutputExtension;
         var includeHeaders = IncludeHeadersCheck.IsChecked == true;
         var isPdf          = IsPdf;
         var separateMode   = SeparateBySource;
@@ -186,7 +235,7 @@ public partial class MainWindow : Window
                     if (files.Count == 0) continue;
 
                     var folderName = new DirectoryInfo(folder).Name;
-                    var outFile    = Path.Combine(outDir, $"{folderName}_{DateTime.Now:yyyyMMdd_HHmmss}{expectedExt}");
+                    var outFile    = Path.Combine(outDir, $"{folderName}{TimestampSuffix}{expectedExt}");
 
                     var progress = new Progress<(int current, int total, string fileName)>(p =>
                     {
@@ -251,7 +300,7 @@ public partial class MainWindow : Window
 
                 ProgressBar.Value  = 100;
                 ProgressLabel.Text = "Done!";
-                AppendLog($"✓  {(isPdf ? "PDF" : "TXT")} created: {outputPath}");
+                AppendLog($"✓  {expectedExt.TrimStart('.').ToUpperInvariant()} created: {outputPath}");
                 _lastOutputDir = outDir;
             }
 
@@ -282,12 +331,12 @@ public partial class MainWindow : Window
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static string BuildDefaultOutputPath(IList<string> folders, string ext)
+    private string BuildDefaultOutputPath(IList<string> folders, string ext)
     {
         var baseName = folders.Count == 1
             ? new DirectoryInfo(folders[0]).Name
             : "Export";
-        return Path.Combine(BuildDefaultOutputDir(), $"{baseName}_{DateTime.Now:yyyyMMdd_HHmmss}{ext}");
+        return Path.Combine(BuildDefaultOutputDir(), $"{baseName}{TimestampSuffix}{ext}");
     }
 
     private static string BuildDefaultOutputDir() =>
