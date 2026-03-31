@@ -83,8 +83,6 @@ public static class PdfConverter
             }
         }
 
-        document.Close();
-        pdfDoc.Close();
     }
 
     public static void CreateTxtFromFiles(

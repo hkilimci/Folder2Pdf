@@ -63,7 +63,7 @@ public partial class MainWindow : Window
 
     // ── Separate-by-source toggle ────────────────────────────────────────────
 
-    private void SeparateBySource_Changed(object sender, RoutedEventArgs e)
+    private void SeparateBySource_Changed(object? sender, RoutedEventArgs e)
     {
         if (OutputLabel is null) return; // guard during init
 
@@ -203,6 +203,7 @@ public partial class MainWindow : Window
         var isPdf          = IsPdf;
         var separateMode   = SeparateBySource;
         var folderSnapshot = _folders.ToList();
+        var timestampSuffix = TimestampSuffix;
 
         // Lock UI
         _isConverting = true;
@@ -235,7 +236,7 @@ public partial class MainWindow : Window
                     if (files.Count == 0) continue;
 
                     var folderName = new DirectoryInfo(folder).Name;
-                    var outFile    = Path.Combine(outDir, $"{folderName}{TimestampSuffix}{expectedExt}");
+                    var outFile    = Path.Combine(outDir, $"{folderName}{timestampSuffix}{expectedExt}");
 
                     var progress = new Progress<(int current, int total, string fileName)>(p =>
                     {
@@ -261,7 +262,7 @@ public partial class MainWindow : Window
                 // Merged mode
                 var outputPath = OutputPathBox.Text?.Trim();
                 if (string.IsNullOrEmpty(outputPath))
-                    outputPath = BuildDefaultOutputPath(folderSnapshot, expectedExt);
+                    outputPath = BuildDefaultOutputPath(folderSnapshot, expectedExt, timestampSuffix);
                 else if (!outputPath.EndsWith(expectedExt, StringComparison.OrdinalIgnoreCase))
                     outputPath = Path.ChangeExtension(outputPath, expectedExt);
 
@@ -314,6 +315,8 @@ public partial class MainWindow : Window
         {
             _isConverting = false;
             ConvertButton.IsEnabled = true;
+            ProgressBar.IsVisible = false;
+            ProgressLabel.IsVisible = false;
         }
     }
 
@@ -331,12 +334,12 @@ public partial class MainWindow : Window
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private string BuildDefaultOutputPath(IList<string> folders, string ext)
+    private string BuildDefaultOutputPath(IList<string> folders, string ext, string? timestamp = null)
     {
         var baseName = folders.Count == 1
             ? new DirectoryInfo(folders[0]).Name
             : "Export";
-        return Path.Combine(BuildDefaultOutputDir(), $"{baseName}{TimestampSuffix}{ext}");
+        return Path.Combine(BuildDefaultOutputDir(), $"{baseName}{timestamp ?? TimestampSuffix}{ext}");
     }
 
     private static string BuildDefaultOutputDir() =>

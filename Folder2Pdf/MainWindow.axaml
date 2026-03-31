@@ -13,17 +13,6 @@
         <!-- ── Top: inputs + controls ── -->
         <StackPanel Grid.Row="0" Spacing="16">
 
-            <!-- Header -->
-            <!-- <StackPanel Margin="0,0,0,4"> -->
-            <!--     <TextBlock Text="Folder2PDF" -->
-            <!--                FontSize="28" -->
-            <!--                FontWeight="Bold" /> -->
-            <!--     <TextBlock Text="Convert source code folders to PDF or plain text" -->
-            <!--                FontSize="13" -->
-            <!--                Foreground="#8B8B9E" -->
-            <!--                Margin="0,4,0,0" /> -->
-            <!-- </StackPanel> -->
-
             <!-- Source Folders Card -->
             <Border Classes="card">
                 <StackPanel Spacing="10">
